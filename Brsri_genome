@@ -1,0 +1,72 @@
+# contig assembly
+
+# assembly
+/usr/users/abrandt3/Timema_for_Patrick/software/hifiasm-0.14.1/hifiasm -t 24 -o Brsri_v1.asm ../reads.fastq.gz
+
+# convert GFA to FASTA
+awk '/^S/{print ">"$2;print $3}’ Brsri_v1.gfa > Brsri_v1.fasta
+
+
+# decontamination
+
+# blast contigs for taxonomy hits.
+module load blast-plus/2.11.0 
+blastn -query genome.fasta -db /nt -outfmt '6 qseqid staxids bitscore evalue std sscinames sskingdoms stitle' -max_target_seqs 10 -max_hsps 1 -evalue 1e-25 -num_threads 20 -out Brsri_v1.vs.nt.max10.1e25.blastn.out
+
+# map reads for coverage estimation.
+
+module load blast-plus/2.11.0 
+module add UHTS/Analysis/minimap2/2.17;
+module add UHTS/Analysis/samtools/1.10;
+
+minimap2 -t 20 -ax asm20 Brsri_v1.fasta reads.fastq | samtools sort -o Brsri_v1.sorted.bam
+
+# blobtools
+blobtools create -i Brsri_v1.fasta -t ../ Brsri_v1.vs.nt.max10.1e25.blastn.out \
+--nodes data/nodes.dmp \
+--names data/names.dmp \
+-c genome.sorted.formatted_cov -x bestsumorder -o output_name
+
+# plot
+blobtools plot -i Brsri_v1.blobDB.json --sort count --hist count -x bestsumorder
+
+# Convert to table
+blobtools view -i Brsri_v1.blobDB.json --hits --rank all -x bestsumorder
+
+# for each contig: look at phylum hits and keep contig that has at least 1 metazoan hit using a custom script:
+https://github.com/AsexGenomeEvol/HD_Oppiella/blob/master/assembly/contamination_filtration.py 
+
+# filter out contigs with non metazoans hits.
+module add UHTS/Analysis/BBMap/37.82
+filterbyname.sh in=Brsri_v1.fasta names=contaminant_scaffolds.txt out=Brsri_v2.fasta include=f 
+
+
+# Hi-C scaffolding
+
+# Juicer
+
+# BWA database
+module load bwa
+bwa index genome_decontaminated.fasta 
+
+# generate a restriction sites file for draft fasta
+mkdir restriction_sites; cd restriction_sites
+python /usr/users/abrandt3/Timema_for_Patrick/software/juicer/misc/generate_site_positions.py DpnII draft ../references/ Brsri_v2.fasta
+
+# create chrom.sizes
+awk 'BEGIN{OFS="\t"}{print $1, $NF}' restriction_sites/draft_DpnII.txt > Brsri_v2.sizes
+
+# Hi-C files setting
+mkdir fastq
+cd fastq
+ln -s /usr/users/abrandt3/Timema_for_Patrick/hic/R1.fastq.gz Brsri_R1.fastq.gz
+ln -s /usr/users/abrandt3/Timema_for_Patrick/hic/R2.fastq.gz Brisri_R2.fastq.gz
+
+# run Juicer
+./scripts/juicer.sh -g output_name -z references/ Brsri_v2.fasta -y restriction_sites/draft_DpnII.txt -p Brsri_v2.chrom.sizes -D /usr/users/abrandt3/Timema_for_Patrick/juicer -t 24 2>juicer.error 1>juicer.output
+
+# 3D-DNA
+3d-dna/run-asm-pipeline.sh Brsri_v2.fasta merged_nodups.txt
+
+# reformat and renaming scaffold 
+=> Brsri_v3.fasta
