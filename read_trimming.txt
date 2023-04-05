@@ -1,0 +1,13 @@
+### check quality with fastqc ###
+adapter contamination noticed!
+
+### trims bases with <20 quality from 3prime read ends, performs automatic adapter detection and removes them, removes reads that became < 20bp (trimgalore standard parameters; it is a wrapper around fastqc and cutadapt) ###
+for f in *.fq; do ../../Software/TrimGalore-master/trim_galore $f; done
+
+### modify ending as bwa has problems with _ or something ###
+for f in *_trimmed.fq; do mv -- "$f" "${f%_trimmed.fq}-trimmed.fq"; done
+
+### gzip raw and trimmed reads for LTS ###
+gzip *.fq
+
+
