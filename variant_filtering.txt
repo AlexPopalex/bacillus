@@ -1,0 +1,35 @@
+### remove lab-reared individuals ###
+vcftools --vcf Brsri_v3_gatk.vcf --remove labreared_IDs --recode --recode-INFO-all --out Brsri_v3_gatk_fld
+
+### filter vcf min allele number 2, max allele number 3 ###
+vcftools --vcf Brsri_v3_gatk_fld.recode.vcf --min-alleles 2 --max-alleles 3 --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23
+
+### filter min quality 20 ###
+vcftools --vcf Brsri_v3_gatk_fld_an23.recode.vcf --minQ 20 --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23_ql20
+
+### remove indels ###
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20.recode.vcf --remove-indels --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps
+
+### filter min coverage x to reduce prob. of allelic dropout; x=5       0.03125    x=6       0.015625      x=7   0.0078125   x=8    0.00390625     x=9     0.001953125
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps.recode.vcf --minDP 8 --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08
+
+### filter minor allele count 3 ###  check for max alleles 3
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08.recode.vcf --mac 3 --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3
+
+### remove sites with missing info in > 50% inds ###
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3.recode.vcf --max-missing 0.5 --recode --recode-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05
+
+### check and remove inds with missing data based on histogram (> 0.74) ###
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05.recode.vcf --missing-indv --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05
+read.table("Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05.imiss",header=TRUE) -> imiss
+hist(imiss$F_MISS)
+cat Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05.imiss | awk '{if ($5 > 0.74) print $1}' > rm074Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05.recode.vcf --remove rm074Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05 --recode --keep-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074
+
+### check per site coverage to estimate a meaningful max-meanDP threshold, e.g. 2 times SD + the median ###
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074.recode.vcf --site-mean-depth --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074
+read.table("Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074.ldepth.mean",header=TRUE) -> ldepth
+1*sd(ldepth$MEAN_DEPTH)+median(ldepth$MEAN_DEPTH)
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074.recode.vcf --site-mean-depth --stdout | grep -v "CHR" | awk '{if($3 > 39.9805){print $1"\t"$2}}' > filter_39.9805
+vcftools --vcf Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074.recode.vcf --exclude-positions filter_39.9805 --recode --keep-INFO-all --out Brsri_v3_gatk_fld_an23_ql20_snps_dp08_mc3_mm05_r074_mc39.9805
+

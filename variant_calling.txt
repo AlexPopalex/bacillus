@@ -1,0 +1,7 @@
+# provide indexes for variant calling
+gatk CreateSequenceDictionary -R Brsri_v3.fasta
+samtools index merged.bam
+
+# call variants
+gatk HaplotypeCaller -I merged.bam -O Brsri_v3_gatk_scf10.vcf -R Brsri_v3.fasta -L Brsri_v3_scf10 --max-reads-per-alignment-start 0
+

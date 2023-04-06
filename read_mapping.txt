@@ -1,0 +1,12 @@
+### map per run and add readgroup information ###
+#bwa index Brsri_v3.fasta
+for i in $(cat A_list); do bwa mem -t 20 -M -R "@RG\tID:$i\tSM:$i" Brsri_v3.fasta $i-trimmed.fq > $i-map.sam; done
+
+### remove any reads with secondary and supplementary alignments (-F 0x100 is actually redundant), filter by mapping quality and sort and index ###
+for i in $(cat A_list); do
+        samtools view -S -h $i-map.sam -@ 20 | grep -v -e 'XA:Z:' -e 'SA:Z:' | samtools view -b -h -F 2308 -q 20 -@ 20 | samtools sort -o $i-filtered.bam -@ 20 ;
+        samtools index $i-filtered.bam -@ 20;
+done
+
+### combine all ###
+samtools merge merged.bam *-filtered.bam
