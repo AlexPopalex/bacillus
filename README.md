@@ -21,4 +21,4 @@ The resulting alignment is available in this repository: `All_filtered_with_refs
 ```
 iqtree2 -T 1 -s Sicily_with_refs_aligned.phylip -m MFP -B 1000
 ```
-The resulting tree was analysed in R along with the rest.
+The resulting tree was rerooted manually in FigTree using the outgroup (*Clonopsis*) and analysed in R along with the rest. The rerooted version is available in this repository: `All_filtered_with_refs_aligned.phylip_rerooted.newick`.
