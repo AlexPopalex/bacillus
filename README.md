@@ -44,15 +44,15 @@ vcftools --vcf Brsri_v3_gatk.vcf \
 --remove-indels
 ```
 
-We then ran admixture over 10 replicates using the following script:
+We then ran admixture over **10 replicates** with **k=5** using the following script. The `--supervised` mode required a **cleaned.pop** containing one column with species names of pure individuals and "-" for all hybrids (same order as in the input vcf).
 ```bash
 ### This script takes 3 arguments:
-### $1 is the input file in vcf format. The chromosome names must be numeric values because plink is dumb.
+### $1 is the input file in vcf format.
 ### $2 is the number of K that we want to test.
 ### $3 is the number of replicates that we want to run.
 ### Usage example: sbatch admixture.sh cleaned.vcf 6 10
 
-# pretending all markers are on chromosome 1
+# pretending all markers are on chromosome 1 because plink is dumb and doesn't like non-numeric chromosome values.
 grep '#' $1 > headers.tmp
 grep -v '#' $1 | cut -f 2- > vcf2.tmp
 NLINES=$(wc -l vcf2.tmp | cut -f 1 -d ' ')
@@ -88,6 +88,70 @@ cat ${j}/CV_results_${j}.txt | cut -f 4 -d ' ' > ./${j}.tmp
 done
 paste k.tmp rep*.tmp > CV_summary_across_rep.txt
 rm *.tmp
+```
+
+# Per-chromosome admixture
+We ran it indepedently for each type of hybrid, filtering the raw vcf with the same criteria as above but retaining only the individuals belonging to the hybrid lineage of interest and its parental lineages (option `--keep list.txt` where list.txt is a list of newline-separated individual labels). 
+The script is pretty similar to the above, except that it includes a loop to loop across chromosomes. The `--supervised` mode required a **cleaned.pop** containing one column with species names of pure individuals and "-" for all hybrids (same order as in the input vcf).
+
+```bash
+### This script takes 3 arguments:
+### $1 is the input file in vcf format.
+### $2 is the number of K that we want to test.
+### $3 is the number of replicates that we want to run.
+### Usage example: sbatch admixture.sh cleaned.vcf 6 10
+
+module load gcc/9.3.0
+module load plink-ng/2.0.20200727
+module load vcftools/0.1.14
+
+for i in $(seq 1 18)
+
+do
+#mkdir chr${i}
+#vcftools --vcf $1 --chr Brsri_v3_scf${i} --recode --out chr${i}/chr${i}
+
+cd chr${i}
+
+cp ../cleaned.pop .
+
+# pretending all markers are on chromosome 1
+grep '#' chr${i}.recode.vcf > headers.tmp
+grep -v '#' chr${i}.recode.vcf | cut -f 2- > vcf2.tmp
+NLINES=$(wc -l vcf2.tmp | cut -f 1 -d ' ')
+yes 1 | head -n $NLINES > vcf1.tmp
+paste vcf1.tmp vcf2.tmp > vcf3.tmp
+cat headers.tmp vcf3.tmp > cleaned.vcf
+rm *.tmp
+
+plink2 --vcf cleaned.vcf --make-bed --out cleaned --allow-extra-chr --chr-set 18
+
+for j in $(seq 1 $3)
+do
+mkdir rep${j}
+cd rep${j}
+
+~/software/admixture -s time --supervised --cv=10 ../cleaned.bed $2 &> log_K$2.out
+
+grep -h CV log*.out > CV_results_rep${j}.txt
+
+cd ../
+
+done
+
+# Summarizing the CV error
+
+cut -f 1 -d ')' rep1/CV_results_rep1.txt | cut -f 2 -d '=' > k.tmp
+for j in $(ls rep*/CV_results_rep*.txt | cut -f 1 -d '/')
+do
+cat ${j}/CV_results_${j}.txt | cut -f 4 -d ' ' > ./${j}.tmp
+done
+paste k.tmp rep*.tmp > CV_summary_across_rep.txt
+rm *.tmp
+
+cd ../
+
+done
 ```
 
 
