@@ -1,12 +1,8 @@
-setwd("Bacillus/Final_for_paper/Analyses/")
-
 ### Loading packages
 library(vcfR) # version 1.12.0
 library(adegenet) # version 2.1.3
 library(MASS) # version 7.3-54
 library(phytools) # version 0.7-80
-library(ridgeline)
-
 
 ### Custom functions 
 '%!in%' <- Negate('%in%')
