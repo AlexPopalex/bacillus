@@ -4,7 +4,7 @@ This is the repository for the scripts used in the manuscript
 
 by Guillaume Lavanchy*, Alexander Brandt*, Marc Bastardot, Zoé Dumas, Marjorie Labédan, William Toubiana, Patrick Tran Van, Andrea Luchetti, Valerio Scali, Barbara Mantovani, Tanja Schwander.
 
-
+The demultiplexed RAD data is available on SRA under BioProject **PRJNA1031135**
 
 # mtDNA phylogeny
 We added one reference individual per haplotype from this paper: https://doi.org/10.1006/mpev.2000.0850
