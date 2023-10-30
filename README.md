@@ -2,7 +2,9 @@ This is the repository for the scripts used in the manuscript
 
 ### Evolution of alternative reproductive systems in Bacillus stick insects
 
-by Guillaume Lavanchy*, Alexander Brandt*, Marc Bastardot, Zoé Dumas, Marjorie Labédan, William Toubiana, Patrick Tran Van, Andrea Luchetti, Valerio Scali, Barbara Mantovani, Tanja Schwander.
+by Guillaume Lavanchy*, Alexander Brandt*, Marc Bastardot, Zoé Dumas, Marjorie Labédan, William Toubiana, Patrick Tran Van, Andrea Luchetti, Valerio Scali, Barbara Mantovani, Tanja Schwander
+
+which is on BioRXiv: https://doi.org/10.1101/2023.07.31.550487
 
 The demultiplexed RAD data is available on SRA under BioProject **PRJNA1031135**
 
